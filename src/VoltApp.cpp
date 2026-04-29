@@ -259,39 +259,41 @@ void App::DrawTopbar() {
         return ImGui::IsItemActivated();
     };
 
-    float pad = BTN_W * 0.25f;
+    float icon_w = 14.0f;
+    float px = (BTN_W - icon_w) * 0.5f;
+    float py = (h - icon_w) * 0.5f;
 
     auto draw_close = [&](ImVec2 bmin, ImVec2 bmax) {
-        draw->AddLine(ImVec2(bmin.x + pad, bmin.y + pad),
-                      ImVec2(bmax.x - pad, bmax.y - pad), IM_COL32_WHITE, 2.0f);
-        draw->AddLine(ImVec2(bmax.x - pad, bmin.y + pad),
-                      ImVec2(bmin.x + pad, bmax.y - pad), IM_COL32_WHITE, 2.0f);
+        draw->AddLine(ImVec2(bmin.x + px, bmin.y + py),
+                      ImVec2(bmax.x - px, bmax.y - py), IM_COL32_WHITE, 2.0f);
+        draw->AddLine(ImVec2(bmax.x - px, bmin.y + py),
+                      ImVec2(bmin.x + px, bmax.y - py), IM_COL32_WHITE, 2.0f);
     };
 
     auto draw_maximize = [&](ImVec2 bmin, ImVec2 bmax) {
         if (is_maximized_) {
-            float s = pad * 0.5f;
-            draw->AddRect(ImVec2(bmin.x + pad - s, bmin.y + pad + s),
-                          ImVec2(bmax.x - pad + s, bmax.y - pad - s),
+            float s = icon_w * 0.2f;
+            draw->AddRect(ImVec2(bmin.x + px - s, bmin.y + py + s),
+                          ImVec2(bmax.x - px + s, bmax.y - py - s),
                           IM_COL32_WHITE, 0, 0, 2.0f);
-            ImGui::GetWindowDrawList()->AddRectFilled(
-                ImVec2(bmin.x + pad - s + 1, bmin.y + pad + s + 1),
-                ImVec2(bmax.x - pad + s - 1, bmax.y - pad - s - 1),
+            draw->AddRectFilled(
+                ImVec2(bmin.x + px - s + 1, bmin.y + py + s + 1),
+                ImVec2(bmax.x - px + s - 1, bmax.y - py - s - 1),
                 IM_COL32(28, 28, 32, 255));
-            draw->AddRect(ImVec2(bmin.x + pad + s, bmin.y + pad - s),
-                          ImVec2(bmax.x - pad - s, bmax.y - pad + s),
+            draw->AddRect(ImVec2(bmin.x + px + s, bmin.y + py - s),
+                          ImVec2(bmax.x - px - s, bmax.y - py + s),
                           IM_COL32_WHITE, 0, 0, 2.0f);
         } else {
-            draw->AddRect(ImVec2(bmin.x + pad, bmin.y + pad),
-                          ImVec2(bmax.x - pad, bmax.y - pad),
+            draw->AddRect(ImVec2(bmin.x + px, bmin.y + py),
+                          ImVec2(bmax.x - px, bmax.y - py),
                           IM_COL32_WHITE, 0, 0, 2.0f);
         }
     };
 
     auto draw_minimize = [&](ImVec2 bmin, ImVec2 bmax) {
         float cy = (bmin.y + bmax.y) * 0.5f;
-        draw->AddLine(ImVec2(bmin.x + pad, cy),
-                      ImVec2(bmax.x - pad, cy), IM_COL32_WHITE, 2.0f);
+        draw->AddLine(ImVec2(bmin.x + px, cy),
+                      ImVec2(bmax.x - px, cy), IM_COL32_WHITE, 2.0f);
     };
 
     if (draw_button("##close", IM_COL32(200, 50, 50, 200), draw_close)) {

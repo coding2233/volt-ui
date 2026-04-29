@@ -16,6 +16,10 @@ struct AppConfig {
     bool vsync = true;
     bool resizable = true;
     float scale = 1.0f;
+
+    bool use_topbar = false;
+    float topbar_height = 36.0f;
+    int resize_border = 6;
 };
 
 class App {
@@ -36,12 +40,18 @@ public:
     void SetClearColor(const Color& color) { clear_color_ = color; }
     const Color& GetClearColor() const { return clear_color_; }
 
+    void ToggleMaximize();
+    bool IsMaximized() const { return is_maximized_; }
+    float GetTopbarHeight() const { return config_.topbar_height; }
+
 protected:
     virtual void OnCreate() {}
     virtual void OnUpdate(float dt) { (void)dt; }
     virtual void OnRender() {}
     virtual void OnEvent(const SDL_Event& event) { (void)event; }
     virtual void OnDestroy() {}
+
+    virtual void DrawTopbar();
 
 private:
     void InitSDL();
@@ -52,6 +62,10 @@ private:
     void EndFrame();
     void ProcessEvents();
 
+    static SDL_HitTestResult HitTestCallback(SDL_Window* win,
+                                             const SDL_Point* area,
+                                             void* data);
+
     AppConfig config_;
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
@@ -61,6 +75,7 @@ private:
     uint64_t frame_count_ = 0;
     uint64_t last_ticks_ = 0;
     Color clear_color_{0.1f, 0.1f, 0.12f, 1.0f};
+    bool is_maximized_ = false;
 };
 
 } // namespace volt

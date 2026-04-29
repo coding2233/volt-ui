@@ -14,6 +14,11 @@ protected:
             ImGui::ShowDemoWindow(&show_demo_);
         }
 
+        if (GetConfig().use_topbar) {
+            ImGui::SetNextWindowPos(ImVec2(0, GetTopbarHeight()), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(GetConfig().width, GetConfig().height - GetTopbarHeight()), ImGuiCond_Once);
+        }
+
         ImGui::Begin("Volt UI");
 
         ImGui::Text("Frame: %llu", (unsigned long long)GetFrameCount());
@@ -23,6 +28,7 @@ protected:
         ImGui::Separator();
 
         ImGui::Checkbox("ImGui Demo", &show_demo_);
+        ImGui::Text("Topbar: %s", GetConfig().use_topbar ? "ON" : "OFF");
 
         if (ImGui::Button("Quit")) {
             Quit();
@@ -42,6 +48,11 @@ private:
 };
 
 int main() {
-    BasicApp app({"Volt UI Demo", 1280, 720});
+    BasicApp app({
+        .title = "Volt UI Demo",
+        .width = 1280,
+        .height = 720,
+        .use_topbar = true
+    });
     return app.Run();
 }

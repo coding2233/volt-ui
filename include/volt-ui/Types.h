@@ -16,4 +16,11 @@ struct Vec2 {
     constexpr Vec2(float x, float y) : x(x), y(y) {}
 };
 
+enum class TopbarButton {
+    None,
+    Minimize,
+    Maximize,
+    Close
+};
+
 } // namespace volt

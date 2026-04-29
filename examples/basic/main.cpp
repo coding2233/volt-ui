@@ -48,11 +48,11 @@ private:
 };
 
 int main() {
-    BasicApp app({
-        .title = "Volt UI Demo",
-        .width = 1280,
-        .height = 720,
-        .use_topbar = true
-    });
+    volt::AppConfig cfg;
+    cfg.title = "Volt UI Demo";
+    cfg.width = 1280;
+    cfg.height = 720;
+    cfg.use_topbar = true;
+    BasicApp app(cfg);
     return app.Run();
 }

@@ -31,3 +31,5 @@ for _, dir in ipairs(os.dirs("examples/*")) do
     add_deps("volt-ui")
     add_packages("libsdl3", "imgui")
 end
+
+add_plugindirs("xmake/plugins")

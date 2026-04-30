@@ -24,10 +24,10 @@ target("volt-ui")
 
 for _, dir in ipairs(os.dirs("examples/*")) do
     local name = path.basename(dir)
-    target(name)
-        set_kind("binary")
-        set_default(false)
-        add_files(path.join(dir, "*.cpp"))
-        add_deps("volt-ui")
-        add_packages("libsdl3", "imgui")
+    target("example-"..name)
+    set_kind("binary")
+    set_default(false)
+    add_files(path.join(dir, "*.cpp"))
+    add_deps("volt-ui")
+    add_packages("libsdl3", "imgui")
 end

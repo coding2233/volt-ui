@@ -196,7 +196,9 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     leanclr::vm::Settings::set_file_loader(AssemblyLoadCallback);
     auto result = leanclr::vm::Runtime::initialize();
     if (result.is_err()) {
-        log_debug("ScriptHost::Initialize failed.");
+        auto err_val = static_cast<int>(result.unwrap_err());
+        log_error("ScriptHost::Initialize failed: RtErr=%d. Check that BCL assemblies exist at '%s' and the C# DLL is in '%s'.",
+                  err_val, impl->bcl_path.c_str(), impl->assembly_dir.c_str());
         Shutdown();
         return false;
     }
@@ -209,18 +211,24 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     LeanclrException* ex = nullptr;
     auto* ass = leanclr_load_assembly(assembly_name.c_str(), &ex);
     if (!ass) {
+        log_error("ScriptHost::Initialize failed: leanclr_load_assembly('%s') returned null (ex=%p). Check that the DLL exists in '%s/'.",
+                  assembly_name.c_str(), (void*)ex, impl->assembly_dir.c_str());
         Shutdown();
         return false;
     }
+    log_debug("ScriptHost: assembly '%s' loaded OK", assembly_name.c_str());
 
     impl->main_module = leanclr_get_assembly_by_module(ass);
 
     auto* klass = leanclr_get_class_by_name(impl->main_module,
                                              impl->entry_class.c_str(), false, &ex);
     if (!klass) {
+        log_error("ScriptHost::Initialize failed: class '%s' not found in assembly",
+                  impl->entry_class.c_str());
         Shutdown();
         return false;
     }
+    log_debug("ScriptHost: class '%s' found OK", impl->entry_class.c_str());
 
     impl->method_create = leanclr_get_class_method_by_name(klass, "OnCreate", &ex);
     impl->method_update = leanclr_get_class_method_by_name(klass, "OnUpdate", &ex);

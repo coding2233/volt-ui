@@ -1,0 +1,3 @@
+[submodule "deps/leanclr"]
+	path = deps/leanclr
+	url = https://github.com/focus-creative-games/leanclr

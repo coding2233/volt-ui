@@ -2,20 +2,54 @@ task("build-appmain")
     on_run(function()
         local csc = os.getenv("CSC")
         if not csc or csc == "" then
-            local candidates = {
-                path.join(os.getenv("DOTNET_ROOT") or "", "sdk", "*", "Roslyn", "bincore", "csc.dll"),
-                path.join(os.getenv("HOME") or os.getenv("USERPROFILE") or "", ".dotnet", "sdk", "*", "Roslyn", "bincore", "csc.dll"),
+            -- Resolve SDK path via dotnet --list-sdks
+            local sdk_info = ""
+            try {
+                function () sdk_info = os.iorun("dotnet --list-sdks") or "" end,
+                catch { function (e) sdk_info = "" end }
             }
-            if os.host() == "windows" then
-                table.insert(candidates, 1, "C:/Program Files/dotnet/sdk/*/Roslyn/bincore/csc.dll")
-            else
-                table.insert(candidates, 1, "/usr/share/dotnet/sdk/*/Roslyn/bincore/csc.dll")
+            
+            if sdk_info ~= "" then
+                for line in sdk_info:gmatch("[^\r\n]+") do
+                    local base_dir = line:match("%[([^%]]+)%]")
+                    if base_dir then
+                        base_dir = base_dir:trim()
+                        if os.isdir(base_dir) then
+                            local versions = os.dirs(path.join(base_dir, "*"))
+                            if versions then
+                                for i = #versions, 1, -1 do
+                                    local candidate = path.join(versions[i], "Roslyn", "bincore", "csc.dll")
+                                    if os.isfile(candidate) then
+                                        csc = candidate
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if csc then break end
+                end
             end
-            for _, pattern in ipairs(candidates) do
-                local files = os.files(pattern)
-                if files and #files > 0 then
-                    csc = files[#files]
-                    break
+
+            -- Fallback to manual path search
+            if not csc or csc == "" then
+                local candidates = {}
+                if os.host() == "windows" then
+                    table.insert(candidates, "C:/Program Files/dotnet/sdk/*/Roslyn/bincore/csc.dll")
+                else
+                    table.insert(candidates, "/usr/share/dotnet/sdk/*/Roslyn/bincore/csc.dll")
+                    if os.isdir("/mnt/c/Program Files/dotnet") then
+                        table.insert(candidates, "/mnt/c/Program Files/dotnet/sdk/*/Roslyn/bincore/csc.dll")
+                    end
+                end
+                table.insert(candidates, path.join(os.getenv("DOTNET_ROOT") or "", "sdk", "*", "Roslyn", "bincore", "csc.dll"))
+                table.insert(candidates, path.join(os.getenv("HOME") or os.getenv("USERPROFILE") or "", ".dotnet", "sdk", "*", "Roslyn", "bincore", "csc.dll"))
+                for _, pattern in ipairs(candidates) do
+                    local files = os.files(pattern)
+                    if files and #files > 0 then
+                        csc = files[#files]
+                        break
+                    end
                 end
             end
         end

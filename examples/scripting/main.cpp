@@ -47,7 +47,7 @@ int main() {
     volt::ScriptHostConfig script_cfg;
     script_cfg.assembly = "AppMain";
     script_cfg.entry_class = "AppMain";
-    script_cfg.bcl_path = "deps/leanclr/src/libraries/dotnetframework4.x";
+    script_cfg.bcl_path = "dotnetframework4.x";
 
     volt::ScriptHost host;
     auto host_init_result = host.Initialize(script_cfg);

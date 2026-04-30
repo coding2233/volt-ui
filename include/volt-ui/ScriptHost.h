@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "log.h"
 
 namespace volt {
 

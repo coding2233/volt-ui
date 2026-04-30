@@ -1,4 +1,5 @@
 #include "volt-ui/VoltApp.h"
+#include "log.h"
 
 #include <imgui.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -56,6 +57,7 @@ void App::ToggleMaximize() {
 }
 
 void App::InitSDL() {
+    log_info("App::InitSDL");
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
         return;

@@ -12,6 +12,8 @@ target("volt-ui")
     set_kind("static")
     set_languages("c++17")
     add_packages("libsdl3", "imgui")
+    add_files("log.c/src/log.c")
+    add_includedirs("log.c/src", {public = true})
     add_files("src/**.cpp")
     add_includedirs("include", {public = true})
     if has_config("enable_leanclr") then

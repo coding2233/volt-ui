@@ -2,6 +2,7 @@
 #include <volt-ui/ScriptHost.h>
 #include <imgui.h>
 
+
 class ScriptingApp : public volt::App {
 public:
     ScriptingApp(const volt::AppConfig& cfg, volt::ScriptHost* host)
@@ -48,7 +49,7 @@ int main() {
     script_cfg.bcl_path = "deps/leanclr/src/libraries/dotnetframework4.x";
 
     volt::ScriptHost host;
-    host.Initialize(script_cfg);
+    auto host_init_result = host.Initialize(script_cfg);
 
     volt::AppConfig cfg;
     cfg.title = "Volt UI + LeanCLR";

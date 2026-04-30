@@ -4,6 +4,7 @@
 #include <string>
 
 #include "volt-ui/Types.h"
+#include "log.h"
 
 struct ImGuiContext;
 

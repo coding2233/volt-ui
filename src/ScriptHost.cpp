@@ -153,6 +153,9 @@ static void InvokeNoArgs(const LeanclrMethodInfo* method) {
     LEANCLR_DECLARING_ALLOC_METHOD_RETURN_BUFFER(ret_buf, method);
     LeanclrException* ex = nullptr;
     leanclr_invoke_with_buffer(method, arg_buf, ret_buf, &ex);
+    if (ex) {
+        log_error("InvokeNoArgs: exception occurred (ex=%p)", (void*)ex);
+    }
 }
 
 static void InvokeFloatArg(const LeanclrMethodInfo* method, float value) {
@@ -162,6 +165,9 @@ static void InvokeFloatArg(const LeanclrMethodInfo* method, float value) {
     leanclr_push_argument(arg_buf, &offset, &value, sizeof(float));
     LeanclrException* ex = nullptr;
     leanclr_invoke_with_buffer(method, arg_buf, ret_buf, &ex);
+    if (ex) {
+        log_error("InvokeFloatArg: exception occurred (ex=%p)", (void*)ex);
+    }
 }
 
 ScriptHost::ScriptHost() = default;
@@ -236,6 +242,8 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     impl->method_create = leanclr_get_class_method_by_name(klass, "OnCreate", &ex);
     impl->method_update = leanclr_get_class_method_by_name(klass, "OnUpdate", &ex);
     impl->method_destroy = leanclr_get_class_method_by_name(klass, "OnDestroy", &ex);
+    log_info("ScriptHost: methods found - OnCreate=%p OnUpdate=%p OnDestroy=%p",
+             (void*)impl->method_create, (void*)impl->method_update, (void*)impl->method_destroy);
 
     initialized_ = true;
     return true;
@@ -262,6 +270,8 @@ void ScriptHost::OnUpdate(float dt) {
     g_current_dt = dt;
     if (i->method_update) {
         InvokeFloatArg(i->method_update, dt);
+    } else {
+        log_error("ScriptHost::OnUpdate: method_update is null, skipping C# invocation");
     }
 }
 

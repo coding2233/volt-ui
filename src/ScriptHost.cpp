@@ -196,6 +196,7 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     leanclr::vm::Settings::set_file_loader(AssemblyLoadCallback);
     auto result = leanclr::vm::Runtime::initialize();
     if (result.is_err()) {
+        log_debug("ScriptHost::Initialize failed.");
         Shutdown();
         return false;
     }

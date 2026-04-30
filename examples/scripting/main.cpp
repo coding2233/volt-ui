@@ -1,3 +1,4 @@
+#include "log.h"
 #include <volt-ui/VoltApp.h>
 #include <volt-ui/ScriptHost.h>
 #include <imgui.h>
@@ -50,6 +51,7 @@ int main() {
 
     volt::ScriptHost host;
     auto host_init_result = host.Initialize(script_cfg);
+    log_debug("host_init_result: %d", host_init_result);
 
     volt::AppConfig cfg;
     cfg.title = "Volt UI + LeanCLR";

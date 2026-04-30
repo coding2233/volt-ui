@@ -79,22 +79,21 @@ static uint64_t g_current_frame = 0;
     }
 
     static void ICall_VoltUI_Button(LeanclrMethodPointer, const LeanclrMethodInfo*,
-                                 const LeanclrStackObject* args, LeanclrStackObject* ret,
-                                 LeanclrException**) {
+                                  const LeanclrStackObject* args, LeanclrStackObject* ret,
+                                  LeanclrException**) {
         size_t offset = 0;
         void* str_obj = nullptr;
-    leanclr_get_argument(args, &offset, &str_obj, sizeof(void*));
-        bool result = false;
+        leanclr_get_argument(args, &offset, &str_obj, sizeof(void*));
+        int32_t result = 0;
         if (str_obj) {
             auto* rt_str = static_cast<leanclr::vm::RtString*>(str_obj);
             int len = leanclr::vm::String::get_length(rt_str);
-        auto* chars = leanclr::vm::String::get_chars_ptr(rt_str);
+            auto* chars = leanclr::vm::String::get_chars_ptr(rt_str);
             std::string label = Utf16ToUtf8(reinterpret_cast<const uint16_t*>(chars), len);
-            result = ImGui::Button(label.c_str());
-            log_info("ICall_VoltUI_Button chars:%s len:%d result=%d", chars, len, result);
+            result = ImGui::Button(label.c_str()) ? 1 : 0;
+            log_info("ICall_VoltUI_Button label:'%s' result=%d", label.c_str(), result);
         }
-        log_info("ICall_VoltUI_Button result=%d", result);
-    leanclr_set_return_value(ret, &result, sizeof(bool));
+        leanclr_set_return_value(ret, &result, sizeof(int32_t));
     }
 
 static void ICall_VoltUI_GetDeltaTime(LeanclrMethodPointer, const LeanclrMethodInfo*,
@@ -210,6 +209,7 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     leanclr_register_internal_call_func("VoltUI::Button", nullptr, ICall_VoltUI_Button);
     leanclr_register_internal_call_func("VoltUI::GetDeltaTime", nullptr, ICall_VoltUI_GetDeltaTime);
     leanclr_register_internal_call_func("VoltUI::GetFrameCount", nullptr, ICall_VoltUI_GetFrameCount);
+    log_info("ScriptHost: Registered InternalCalls for VoltUI");
 
     LeanclrException* ex = nullptr;
     auto* ass = leanclr_load_assembly(assembly_name.c_str(), &ex);

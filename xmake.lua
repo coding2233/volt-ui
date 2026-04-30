@@ -16,6 +16,7 @@ target("volt-ui")
     add_includedirs("log.c/src", {public = true})
     add_files("src/**.cpp")
     add_includedirs("include", {public = true})
+    add_defines("LOG_USE_COLOR")
     if has_config("enable_leanclr") then
         includes("deps/leanclr.lua")
         add_deps("leanclr")

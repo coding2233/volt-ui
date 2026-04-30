@@ -55,8 +55,8 @@ protected:
     virtual void DrawTopbar();
 
 private:
-    void InitSDL();
-    void InitImGui();
+    bool InitSDL();
+    bool InitImGui();
     void ShutdownSDL();
     void ShutdownImGui();
     void BeginFrame();

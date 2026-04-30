@@ -23,7 +23,11 @@ protected:
         ImGui::Begin("C++ Host");
         ImGui::Text("FPS: %.1f", GetFrameRate());
         ImGui::Text("Topbar: %s", GetConfig().use_topbar ? "ON" : "OFF");
-        if (script_host_) script_host_->OnUpdate(0);
+        if (script_host_) 
+        {
+            ImGui::Text("script_host_...");
+            script_host_->OnUpdate(0);
+        }
         ImGui::End();
     }
 

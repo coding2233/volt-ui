@@ -1,4 +1,5 @@
 #include "volt-ui/ScriptHost.h"
+#include "log.h"
 
 #if defined(VOLT_ENABLE_LEANCLR)
 
@@ -90,7 +91,9 @@ static uint64_t g_current_frame = 0;
         auto* chars = leanclr::vm::String::get_chars_ptr(rt_str);
             std::string label = Utf16ToUtf8(reinterpret_cast<const uint16_t*>(chars), len);
             result = ImGui::Button(label.c_str());
+            log_info("ICall_VoltUI_Button chars:%s len:%d result=%d", chars, len, result);
         }
+        log_info("ICall_VoltUI_Button result=%d", result);
     leanclr_set_return_value(ret, &result, sizeof(bool));
     }
 

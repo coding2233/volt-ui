@@ -77,9 +77,11 @@ void App::ToggleMaximize() {
 
 bool App::InitSDL() {
     log_info("App::InitSDL: Start");
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    auto sdl_ret = SDL_Init(SDL_INIT_VIDEO);
+    log_info("App::InitSDL: SDL_Init returned %d", sdl_ret);
+    if (sdl_ret != 0) {
         SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
-        return false;
+        // return false;
     }
     log_info("App::InitSDL: SDL_Init succeeded");
 

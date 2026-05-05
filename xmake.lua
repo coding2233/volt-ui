@@ -20,7 +20,7 @@ target("volt-ui")
     if has_config("enable_leanclr") then
         includes("deps/leanclr.lua")
         add_deps("leanclr")
-        add_defines("VOLT_ENABLE_LEANCLR")
+        add_defines("VOLT_ENABLE_LEANCLR", "LEANCLR_STATIC")
     end
 
 for _, dir in ipairs(os.dirs("examples/*")) do
@@ -31,6 +31,10 @@ for _, dir in ipairs(os.dirs("examples/*")) do
     add_files(path.join(dir, "*.cpp"))
     add_deps("volt-ui")
     add_packages("libsdl3", "imgui")
+    if has_config("enable_leanclr") then
+        add_deps("leanclr")
+        add_defines("VOLT_ENABLE_LEANCLR")
+    end
 end
 
 add_plugindirs("xmake/plugins")

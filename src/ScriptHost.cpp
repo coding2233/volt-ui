@@ -15,10 +15,13 @@
 #include "core/rt_result.h"
 #include "utils/rt_span.h"
 #include "alloc/general_allocation.h"
+#include "interp/interp_defs.h"
 
 #include <fstream>
 #include <vector>
 #include <cstring>
+#include <filesystem>
+#include <unistd.h>
 
 namespace volt {
 
@@ -59,55 +62,62 @@ static std::vector<uint8_t> ReadFileBytes(const std::string& path) {
     return data;
 }
 
+static std::string GetExeDir() {
+    char path[4096];
+    ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+    if (len == -1) return std::filesystem::current_path().string();
+    path[len] = '\0';
+    return std::filesystem::path(path).parent_path().string();
+}
+
 static float g_current_dt = 0.0f;
 static uint64_t g_current_frame = 0;
 
-    static void ICall_VoltUI_Text(LeanclrMethodPointer, const LeanclrMethodInfo*,
-                               const LeanclrStackObject* args, LeanclrStackObject* ret,
-                               LeanclrException**) {
-        size_t offset = 0;
-        void* str_obj = nullptr;
-    leanclr_get_argument(args, &offset, &str_obj, sizeof(void*));
-        if (str_obj) {
-            auto* rt_str = static_cast<leanclr::vm::RtString*>(str_obj);
-            int len = leanclr::vm::String::get_length(rt_str);
-        auto* chars = leanclr::vm::String::get_chars_ptr(rt_str);
+static leanclr::RtResultVoid ICall_VoltUI_Text(LeanclrMethodPointer, const LeanclrMethodInfo*,
+                               const leanclr::interp::RtStackObject* args, leanclr::interp::RtStackObject* ret) {
+    void* str_ptr = args[0].ptr;
+    if (str_ptr) {
+        auto* str_obj = static_cast<leanclr::vm::RtString*>(str_ptr);
+        int len = leanclr::vm::String::get_length(str_obj);
+        if (len > 0 && len < 10000) {
+            auto* chars = leanclr::vm::String::get_chars_ptr(str_obj);
             std::string text = Utf16ToUtf8(reinterpret_cast<const uint16_t*>(chars), len);
             ImGui::TextUnformatted(text.c_str());
         }
-        (void)ret;
     }
-
-    static void ICall_VoltUI_Button(LeanclrMethodPointer, const LeanclrMethodInfo*,
-                                  const LeanclrStackObject* args, LeanclrStackObject* ret,
-                                  LeanclrException**) {
-        size_t offset = 0;
-        void* str_obj = nullptr;
-        leanclr_get_argument(args, &offset, &str_obj, sizeof(void*));
-        int32_t result = 0;
-        if (str_obj) {
-            auto* rt_str = static_cast<leanclr::vm::RtString*>(str_obj);
-            int len = leanclr::vm::String::get_length(rt_str);
-            auto* chars = leanclr::vm::String::get_chars_ptr(rt_str);
-            std::string label = Utf16ToUtf8(reinterpret_cast<const uint16_t*>(chars), len);
-            result = ImGui::Button(label.c_str()) ? 1 : 0;
-            log_info("ICall_VoltUI_Button label:'%s' result=%d", label.c_str(), result);
-        }
-        leanclr_set_return_value(ret, &result, sizeof(int32_t));
-    }
-
-static void ICall_VoltUI_GetDeltaTime(LeanclrMethodPointer, const LeanclrMethodInfo*,
-                                       const LeanclrStackObject* args, LeanclrStackObject* ret,
-                                       LeanclrException**) {
-    leanclr_set_return_value(ret, &g_current_dt, sizeof(float));
-    (void)args;
+    (void)ret;
+    return leanclr::RtResult<leanclr::core::Unit>{leanclr::core::Unit{}};
 }
 
-static void ICall_VoltUI_GetFrameCount(LeanclrMethodPointer, const LeanclrMethodInfo*,
-                                        const LeanclrStackObject* args, LeanclrStackObject* ret,
-                                        LeanclrException**) {
-    leanclr_set_return_value(ret, &g_current_frame, sizeof(uint64_t));
+static leanclr::RtResultVoid ICall_VoltUI_Button(LeanclrMethodPointer, const LeanclrMethodInfo*,
+                                 const leanclr::interp::RtStackObject* args, leanclr::interp::RtStackObject* ret) {
+    int32_t result = 0;
+    void* str_ptr = args[0].ptr;
+    if (str_ptr && reinterpret_cast<uintptr_t>(str_ptr) > 0x1000) {
+        auto* str_obj = static_cast<leanclr::vm::RtString*>(str_ptr);
+        int len = leanclr::vm::String::get_length(str_obj);
+        if (len > 0 && len < 1000) {
+            auto* chars = leanclr::vm::String::get_chars_ptr(str_obj);
+            std::string label = Utf16ToUtf8(reinterpret_cast<const uint16_t*>(chars), len);
+            result = ImGui::Button(label.c_str()) ? 1 : 0;
+        }
+    }
+    *reinterpret_cast<int32_t*>(reinterpret_cast<LeanclrStackObject*>(ret)) = result;
+    return leanclr::RtResult<leanclr::core::Unit>{leanclr::core::Unit{}};
+}
+
+static leanclr::RtResultVoid ICall_VoltUI_GetDeltaTime(LeanclrMethodPointer, const LeanclrMethodInfo*,
+                                       const leanclr::interp::RtStackObject* args, leanclr::interp::RtStackObject* ret) {
+    leanclr_set_return_value(reinterpret_cast<LeanclrStackObject*>(ret), &g_current_dt, sizeof(float));
     (void)args;
+    return leanclr::RtResult<leanclr::core::Unit>{leanclr::core::Unit{}};
+}
+
+static leanclr::RtResultVoid ICall_VoltUI_GetFrameCount(LeanclrMethodPointer, const LeanclrMethodInfo*,
+                                        const leanclr::interp::RtStackObject* args, leanclr::interp::RtStackObject* ret) {
+    leanclr_set_return_value(reinterpret_cast<LeanclrStackObject*>(ret), &g_current_frame, sizeof(uint64_t));
+    (void)args;
+    return leanclr::RtResult<leanclr::core::Unit>{leanclr::core::Unit{}};
 }
 
 struct ScriptHostImpl {
@@ -117,6 +127,7 @@ struct ScriptHostImpl {
 
     const LeanclrMethodInfo* method_create = nullptr;
     const LeanclrMethodInfo* method_update = nullptr;
+    const LeanclrMethodInfo* method_render = nullptr;
     const LeanclrMethodInfo* method_destroy = nullptr;
     LeanclrModuleDef* main_module = nullptr;
 };
@@ -142,9 +153,19 @@ static leanclr::RtResult<leanclr::vm::FileData> AssemblyLoadCallback(
         return leanclr::vm::FileData{buf, bytes.size()};
     };
 
-    auto r = try_load(g_impl->bcl_path);
-    if (r.is_ok()) return r;
-    return try_load(g_impl->assembly_dir);
+    std::string exe_dir = GetExeDir();
+    const std::string dirs[] = {
+        g_impl->bcl_path,
+        g_impl->assembly_dir,
+        exe_dir + "/dotnetframework4.x",
+        exe_dir
+    };
+
+    for (const auto& dir : dirs) {
+        auto result = try_load(dir);
+        if (result.is_ok()) return result;
+    }
+    return leanclr::RtErr::FileNotFound;
 }
 
 static void InvokeNoArgs(const LeanclrMethodInfo* method) {
@@ -183,6 +204,7 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
     impl->assembly_dir = ".";
     impl->method_create = nullptr;
     impl->method_update = nullptr;
+    impl->method_render = nullptr;
     impl->method_destroy = nullptr;
     impl->main_module = nullptr;
 
@@ -211,10 +233,10 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
         return false;
     }
 
-    leanclr_register_internal_call_func("VoltUI::Text", nullptr, ICall_VoltUI_Text);
-    leanclr_register_internal_call_func("VoltUI::Button", nullptr, ICall_VoltUI_Button);
-    leanclr_register_internal_call_func("VoltUI::GetDeltaTime", nullptr, ICall_VoltUI_GetDeltaTime);
-    leanclr_register_internal_call_func("VoltUI::GetFrameCount", nullptr, ICall_VoltUI_GetFrameCount);
+    leanclr_register_internal_call_func("VoltUI::Text", nullptr, reinterpret_cast<LeanclrMethodInvoker>(ICall_VoltUI_Text));
+    leanclr_register_internal_call_func("VoltUI::Button", nullptr, reinterpret_cast<LeanclrMethodInvoker>(ICall_VoltUI_Button));
+    leanclr_register_internal_call_func("VoltUI::GetDeltaTime", nullptr, reinterpret_cast<LeanclrMethodInvoker>(ICall_VoltUI_GetDeltaTime));
+    leanclr_register_internal_call_func("VoltUI::GetFrameCount", nullptr, reinterpret_cast<LeanclrMethodInvoker>(ICall_VoltUI_GetFrameCount));
     log_info("ScriptHost: Registered InternalCalls for VoltUI");
 
     LeanclrException* ex = nullptr;
@@ -241,9 +263,10 @@ bool ScriptHost::Initialize(const ScriptHostConfig& cfg) {
 
     impl->method_create = leanclr_get_class_method_by_name(klass, "OnCreate", &ex);
     impl->method_update = leanclr_get_class_method_by_name(klass, "OnUpdate", &ex);
+    impl->method_render = leanclr_get_class_method_by_name(klass, "OnRender", &ex);
     impl->method_destroy = leanclr_get_class_method_by_name(klass, "OnDestroy", &ex);
-    log_info("ScriptHost: methods found - OnCreate=%p OnUpdate=%p OnDestroy=%p",
-             (void*)impl->method_create, (void*)impl->method_update, (void*)impl->method_destroy);
+    log_info("ScriptHost: methods found - OnCreate=%p OnUpdate=%p OnRender=%p OnDestroy=%p",
+             (void*)impl->method_create, (void*)impl->method_update, (void*)impl->method_render, (void*)impl->method_destroy);
 
     initialized_ = true;
     return true;
@@ -275,6 +298,14 @@ void ScriptHost::OnUpdate(float dt) {
     }
 }
 
+void ScriptHost::OnRender() {
+    auto* i = static_cast<ScriptHostImpl*>(impl_);
+    if (!i) return;
+    if (i->method_render) {
+        InvokeNoArgs(i->method_render);
+    }
+}
+
 void ScriptHost::OnDestroy() {
     auto* i = static_cast<ScriptHostImpl*>(impl_);
     InvokeNoArgs(i ? i->method_destroy : nullptr);
@@ -297,6 +328,7 @@ bool ScriptHost::Initialize(const ScriptHostConfig&) { return false; }
 void ScriptHost::Shutdown() {}
 void ScriptHost::OnCreate() {}
 void ScriptHost::OnUpdate(float) {}
+void ScriptHost::OnRender() {}
 void ScriptHost::OnDestroy() {}
 void ScriptHost::RegisterInternalCall(const char*, void*) {}
 

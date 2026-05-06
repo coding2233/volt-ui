@@ -25,6 +25,7 @@ public:
 
     void OnCreate();
     void OnUpdate(float dt);
+    void OnRender();
     void OnDestroy();
 
     void RegisterInternalCall(const char* name, void* handler);

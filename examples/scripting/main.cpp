@@ -16,18 +16,17 @@ protected:
     }
 
     void OnUpdate(float dt) override {
-        // if (script_host_) script_host_->OnUpdate(dt);
+        if (script_host_) script_host_->OnUpdate(dt);
     }
 
     void OnRender() override {
         ImGui::Begin("C++ Host");
         ImGui::Text("FPS: %.1f", GetFrameRate());
         ImGui::Text("Topbar: %s", GetConfig().use_topbar ? "ON" : "OFF");
-        if (script_host_) 
-        {
-            ImGui::Text("script_host_...");
-            script_host_->OnUpdate(0);
-        }
+        ImGui::End();
+
+        ImGui::Begin("C# Script");
+        if (script_host_) script_host_->OnRender();
         ImGui::End();
     }
 

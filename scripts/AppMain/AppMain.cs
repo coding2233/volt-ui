@@ -6,10 +6,15 @@ internal static class AppMain
 
     public static void OnCreate()
     {
-        Console.WriteLine("[C#] Script loaded!");
+        // Console.WriteLine("[C#] Script loaded!");
     }
 
     public static void OnUpdate(float dt)
+    {
+        // Logic update only - no rendering here
+    }
+
+    public static void OnRender()
     {
         if (VoltUI.Button("Hello from C#"))
         {
@@ -21,11 +26,11 @@ internal static class AppMain
             _showDemo = !_showDemo;
         }
 
-        VoltUI.Text($"DT: {dt * 1000:F2} ms  Frame: {VoltUI.GetFrameCount()}");
+        VoltUI.Text($"DT: {VoltUI.GetDeltaTime() * 1000:F2} ms  Frame: {VoltUI.GetFrameCount()}");
     }
 
     public static void OnDestroy()
     {
-        Console.WriteLine("[C#] Script stopped!");
+        // Console.WriteLine("[C#] Script stopped!");
     }
 }

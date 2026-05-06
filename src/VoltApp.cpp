@@ -77,11 +77,11 @@ void App::ToggleMaximize() {
 
 bool App::InitSDL() {
     log_info("App::InitSDL: Start");
-    auto sdl_ret = SDL_Init(SDL_INIT_VIDEO);
+    bool sdl_ret = SDL_Init(SDL_INIT_VIDEO);
     log_info("App::InitSDL: SDL_Init returned %d", sdl_ret);
-    if (sdl_ret != 0) {
+    if (!sdl_ret) {
         SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
-        // return false;
+        return false;
     }
     log_info("App::InitSDL: SDL_Init succeeded");
 
@@ -154,8 +154,8 @@ void App::ShutdownImGui() {
 }
 
 void App::BeginFrame() {
-    ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
+    ImGui_ImplSDLRenderer3_NewFrame();
     ImGui::NewFrame();
 }
 

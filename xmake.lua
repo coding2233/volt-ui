@@ -1,7 +1,7 @@
 add_rules("mode.debug", "mode.release")
 
 add_requires("libsdl3")
-add_requires("imgui", {configs = {sdl3 = true, sdl3_renderer = true}})
+add_requires("imgui", {configs = {sdl3 = true, sdl3_renderer = true}, version = "v1.92.7-docking"})
 
 option("enable_leanclr")
     set_default(false)

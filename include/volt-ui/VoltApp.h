@@ -41,8 +41,6 @@ public:
     void SetClearColor(const Color& color) { clear_color_ = color; }
     const Color& GetClearColor() const { return clear_color_; }
 
-    void ToggleMaximize();
-    bool IsMaximized() const { return is_maximized_; }
     float GetTopbarHeight() const { return config_.topbar_height; }
 
 protected:
@@ -52,7 +50,17 @@ protected:
     virtual void OnEvent(const SDL_Event& event) { (void)event; }
     virtual void OnDestroy() {}
 
+    virtual Uint32 GetWindowFlags() const;
+    virtual void OnWindowCreated();
+    virtual bool OnPlatformEvent(const SDL_Event& event);
+    virtual void OnPreRender();
+
     virtual void DrawTopbar();
+    void ToggleMaximize();
+    bool IsMaximized() const { return is_maximized_; }
+    static SDL_HitTestResult HitTestCallback(SDL_Window* win,
+                                             const SDL_Point* area,
+                                             void* data);
 
 private:
     bool InitSDL();
@@ -62,10 +70,6 @@ private:
     void BeginFrame();
     void EndFrame();
     void ProcessEvents();
-
-    static SDL_HitTestResult HitTestCallback(SDL_Window* win,
-                                             const SDL_Point* area,
-                                             void* data);
 
     AppConfig config_;
     SDL_Window* window_ = nullptr;

@@ -21,7 +21,9 @@
 #include <vector>
 #include <cstring>
 #include <filesystem>
+#ifdef __unix__
 #include <unistd.h>
+#endif
 
 namespace volt {
 

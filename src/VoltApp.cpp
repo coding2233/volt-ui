@@ -85,7 +85,7 @@ bool App::InitSDL() {
     }
     log_info("App::InitSDL: SDL_Init succeeded");
 
-    Uint32 flags = 0;
+    Uint32 flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if (config_.resizable || config_.use_topbar) flags |= SDL_WINDOW_RESIZABLE;
     if (config_.use_topbar) flags |= SDL_WINDOW_BORDERLESS;
 
@@ -132,10 +132,12 @@ bool App::InitImGui() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.IniFilename = nullptr;
 
-    ImGui::StyleColorsDark();
-
-    if (config_.scale > 0.0f && config_.scale != 1.0f) {
-        ImGui::GetStyle().ScaleAllSizes(config_.scale);
+    {
+        float detected = SDL_GetWindowDisplayScale(window_);
+        if (detected <= 0.0f)
+            detected = SDL_GetDisplayContentScale(SDL_GetDisplayForWindow(window_));
+        if (detected >= 1.25f)
+            config_.scale = detected;
     }
 
     ImGui_ImplSDL3_InitForSDLRenderer(window_, renderer_);

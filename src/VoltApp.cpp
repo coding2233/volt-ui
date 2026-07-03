@@ -85,6 +85,15 @@ bool App::InitSDL() {
     }
     log_info("App::InitSDL: SDL_Init succeeded");
 
+    {
+        SDL_DisplayID display = SDL_GetPrimaryDisplay();
+        SDL_Rect displayBounds;
+        if (display && SDL_GetDisplayBounds(display, &displayBounds)) {
+            config_.width = int(displayBounds.w * 0.8f);
+            config_.height = int(displayBounds.h * 0.8f);
+        }
+    }
+
     Uint32 flags = SDL_WINDOW_HIGH_PIXEL_DENSITY;
     if (config_.resizable || config_.use_topbar) flags |= SDL_WINDOW_RESIZABLE;
     if (config_.use_topbar) flags |= SDL_WINDOW_BORDERLESS;

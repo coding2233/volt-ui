@@ -15,6 +15,10 @@ target("volt-ui")
     add_files("log.c/src/log.c")
     add_includedirs("log.c/src", {public = true})
     add_files("src/**.cpp")
+    if is_plat("macosx") then
+        add_files("src/**.mm")
+        add_frameworks("Cocoa")
+    end
     add_includedirs("include", {public = true})
     add_defines("LOG_USE_COLOR")
     if has_config("enable_leanclr") then

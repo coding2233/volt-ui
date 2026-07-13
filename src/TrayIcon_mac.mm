@@ -85,7 +85,6 @@ void TrayIcon::PlatformShow() {
         d.delegate.tray = this;
         d.statusItem = [[NSStatusBar systemStatusBar]
             statusItemWithLength:NSSquareStatusItemLength];
-        [d.statusItem retain];
 
         if (d.icon) {
             NSImage* scaled = [d.icon copy];
@@ -129,7 +128,7 @@ void TrayIcon::PlatformUpdateMenu() {
                 [menuItem setTarget:d.delegate];
                 [menuItem setTag:i];
                 [menuItem setEnabled:item.enabled];
-                [menuItem setState:item.checked ? NSOnState : NSOffState];
+                [menuItem setState:item.checked ? NSControlStateValueOn : NSControlStateValueOff];
                 [menu addItem:menuItem];
             }
         }

@@ -6,12 +6,13 @@
 
 namespace volt {
 
+static UINT g_taskbarRestartMsg = 0;
+
 struct TrayIcon::PlatformData {
     HWND hwnd = nullptr;
     HICON hIcon = nullptr;
     NOTIFYICONDATAA nid = {};
     std::string tooltip;
-    UINT taskbarRestartMsg = 0;
     bool visible = false;
     std::thread eventThread;
     std::atomic<bool> running{false};
@@ -39,7 +40,7 @@ static LRESULT CALLBACK TrayWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         tray->PushEvent(ev);
         return 0;
     }
-    if (tray && tray->m_data && msg == tray->m_data->taskbarRestartMsg) {
+    if (tray && g_taskbarRestartMsg && msg == g_taskbarRestartMsg) {
         tray->Hide(); tray->Show();
         return 0;
     }
@@ -64,7 +65,7 @@ bool TrayIcon::PlatformInit(const std::string& iconPath, const std::string& tool
     d.hwnd = CreateWindowExA(0, "TransFlint_TrayClass", "TransFlintTray", 0, 0, 0, 0, 0,
                              nullptr, nullptr, hInst, nullptr);
     SetWindowLongPtrA(d.hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-    d.taskbarRestartMsg = RegisterWindowMessageA("TaskbarCreated");
+    g_taskbarRestartMsg = RegisterWindowMessageA("TaskbarCreated");
 
     d.hIcon = iconPath.empty() ? LoadIconA(nullptr, IDI_APPLICATION) :
               (HICON)LoadImageA(nullptr, iconPath.c_str(), IMAGE_ICON, 16, 16,
@@ -95,7 +96,7 @@ bool TrayIcon::PlatformInitFromData(const uint8_t* rgba, int w, int h, const std
     d.hwnd = CreateWindowExA(0, "TransFlint_TrayClass", "TransFlintTray", 0, 0, 0, 0, 0,
                              nullptr, nullptr, hInst, nullptr);
     SetWindowLongPtrA(d.hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-    d.taskbarRestartMsg = RegisterWindowMessageA("TaskbarCreated");
+    g_taskbarRestartMsg = RegisterWindowMessageA("TaskbarCreated");
 
     HDC hdc = GetDC(nullptr);
     HBITMAP hBitmap = CreateCompatibleBitmap(hdc, w, h);

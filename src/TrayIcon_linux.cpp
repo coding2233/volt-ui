@@ -16,8 +16,6 @@ using namespace dbus_mini;
 #undef None
 #undef Bool
 #undef Status
-#undef Window
-#undef CursorShape
 #endif
 
 struct TrayIcon::PlatformData {

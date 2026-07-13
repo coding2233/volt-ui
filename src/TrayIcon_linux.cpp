@@ -13,6 +13,11 @@ using namespace dbus_mini;
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+#undef None
+#undef Bool
+#undef Status
+#undef Window
+#undef CursorShape
 #endif
 
 struct TrayIcon::PlatformData {

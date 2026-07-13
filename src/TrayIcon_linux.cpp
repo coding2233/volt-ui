@@ -152,15 +152,9 @@ void TrayIcon::PlatformShow() {
         d.x11display = XOpenDisplay(nullptr);
         if (!d.x11display) return;
         d.x11screen = DefaultScreen(d.x11display);
-        Atom traySel = XInternAtom(d.x11display, "_NET_SYSTEM_TRAY_S0", False);
+        Atom traySel = XInternAtom(d.x11display, "_NET_SYSTEM_TRAY_S0", 0);
         Window trayOwner = XGetSelectionOwner(d.x11display, traySel);
-        if (trayOwner == None) { XCloseDisplay(d.x11display); d.x11display = nullptr; return; }
-        d.x11screen = DefaultScreen(d.x11display);
-        Atom traySel = XInternAtom(d.x11display, "_NET_SYSTEM_TRAY_S0", False);
-        Window trayOwner = XGetSelectionOwner(d.x11display, traySel);
-        if (trayOwner == None) {
-            XCloseDisplay(d.x11display); d.x11display = nullptr; return;
-        }
+        if (trayOwner == 0) { XCloseDisplay(d.x11display); d.x11display = nullptr; return; }
 
         d.x11window = XCreateSimpleWindow(d.x11display,
             RootWindow(d.x11display, d.x11screen), 0, 0,
@@ -173,13 +167,13 @@ void TrayIcon::PlatformShow() {
 
         XEvent ev; memset(&ev,0,sizeof(ev));
         ev.xclient.type=ClientMessage; ev.xclient.window=trayOwner;
-        ev.xclient.message_type = XInternAtom(d.x11display, "_NET_SYSTEM_TRAY_OPCODE", False);
-        ev.xclient.format=32;
-        ev.xclient.data.l[0]=CurrentTime;
-        ev.xclient.data.l[1]=SYSTEM_TRAY_REQUEST_DOCK;
-        ev.xclient.data.l[2]=d.x11window;
-        XSendEvent(d.x11display, trayOwner, False, NoEventMask, &ev);
-        XSync(d.x11display, False);
+        ev.xclient.message_type = XInternAtom(d.x11display, "_NET_SYSTEM_TRAY_OPCODE", 0);
+        ev.xclient.format = 32;
+        ev.xclient.data.l[0] = CurrentTime;
+        ev.xclient.data.l[1] = SYSTEM_TRAY_REQUEST_DOCK;
+        ev.xclient.data.l[2] = d.x11window;
+        XSendEvent(d.x11display, trayOwner, 0, 0, &ev);
+        XSync(d.x11display, 0);
         d.x11docked=true; d.backendVisible=true;
 
         // Paint first frame

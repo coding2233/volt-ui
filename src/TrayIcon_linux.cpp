@@ -13,6 +13,9 @@
 #undef None
 #undef Bool
 #undef Status
+#ifndef SYSTEM_TRAY_REQUEST_DOCK
+#define SYSTEM_TRAY_REQUEST_DOCK 0
+#endif
 #endif
 
 namespace volt {

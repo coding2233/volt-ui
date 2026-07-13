@@ -5,9 +5,6 @@
 #include <cmath>
 #include <unistd.h>
 
-namespace volt {
-using namespace dbus_mini;
-
 #if __has_include(<X11/Xlib.h>) && __has_include(<X11/Xatom.h>) && __has_include(<X11/Xutil.h>)
 #define HAS_X11 1
 #include <X11/Xlib.h>
@@ -17,6 +14,9 @@ using namespace dbus_mini;
 #undef Bool
 #undef Status
 #endif
+
+namespace volt {
+using namespace dbus_mini;
 
 struct TrayIcon::PlatformData {
     int iconWidth = 16; int iconHeight = 16;

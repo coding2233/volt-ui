@@ -24,6 +24,9 @@ target("volt-ui")
     end
     add_includedirs("include", {public = true})
     add_defines("LOG_USE_COLOR")
+    if is_plat("windows") then
+        add_syslinks("ole32", "shell32")
+    end
     if has_config("enable_leanclr") then
         includes("deps/leanclr.lua")
         add_deps("leanclr")

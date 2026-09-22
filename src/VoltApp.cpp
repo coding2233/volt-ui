@@ -5,6 +5,16 @@
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_sdlrenderer3.h>
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <ole2.h>
+#include <shellapi.h>
+#include <SDL3/SDL_properties.h>
+#endif
+
 namespace volt {
 
 static constexpr int BTN_W = 46;
@@ -119,10 +129,12 @@ bool App::InitSDL() {
 
     SDL_SetRenderVSync(renderer_, config_.vsync ? 1 : 0);
     log_info("App::InitSDL: VSync set");
+    InstallFileDrop();
     return true;
 }
 
 void App::ShutdownSDL() {
+    RemoveFileDrop();
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (window_) SDL_DestroyWindow(window_);
     SDL_Quit();
@@ -219,8 +231,207 @@ void App::ProcessEvents() {
     }
 }
 
+#ifdef _WIN32
+
+namespace {
+
+std::string WideToUtf8(const wchar_t* text, int chars)
+{
+    if (!text || chars <= 0)
+        return {};
+    int bytes = WideCharToMultiByte(CP_UTF8, 0, text, chars, nullptr, 0, nullptr, nullptr);
+    if (bytes <= 0)
+        return {};
+    std::string out(static_cast<size_t>(bytes), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, text, chars, out.data(), bytes, nullptr, nullptr);
+    return out;
+}
+
+bool DataHasFiles(IDataObject* data)
+{
+    if (!data)
+        return false;
+    FORMATETC fmt{ CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+    return data->QueryGetData(&fmt) == S_OK;
+}
+
+} // namespace
+
+struct WinFileDropTarget : IDropTarget {
+    explicit WinFileDropTarget(App* app) : app_(app) {}
+    void Detach() { app_ = nullptr; }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** object) override
+    {
+        if (!object)
+            return E_POINTER;
+        if (riid == IID_IUnknown || riid == IID_IDropTarget) {
+            *object = static_cast<IDropTarget*>(this);
+            AddRef();
+            return S_OK;
+        }
+        *object = nullptr;
+        return E_NOINTERFACE;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() override
+    {
+        return static_cast<ULONG>(InterlockedIncrement(&refs_));
+    }
+
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        ULONG left = static_cast<ULONG>(InterlockedDecrement(&refs_));
+        if (left == 0)
+            delete this;
+        return left;
+    }
+
+    HRESULT STDMETHODCALLTYPE DragEnter(IDataObject* data, DWORD, POINTL, DWORD* effect) override
+    {
+        bool ok = DataHasFiles(data);
+        if (effect)
+            *effect = ok ? DROPEFFECT_COPY : DROPEFFECT_NONE;
+        if (app_) {
+            app_->external_file_drag_.store(ok, std::memory_order_relaxed);
+            app_->OnFileDragHover(ok);
+        }
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE DragOver(DWORD, POINTL, DWORD* effect) override
+    {
+        if (effect)
+            *effect = app_ && app_->external_file_drag_.load(std::memory_order_relaxed)
+                ? DROPEFFECT_COPY : DROPEFFECT_NONE;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE DragLeave() override
+    {
+        if (app_) {
+            app_->external_file_drag_.store(false, std::memory_order_relaxed);
+            app_->OnFileDragHover(false);
+        }
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE Drop(IDataObject* data, DWORD, POINTL, DWORD* effect) override
+    {
+        if (effect)
+            *effect = DROPEFFECT_COPY;
+        if (app_)
+            app_->external_file_drag_.store(false, std::memory_order_relaxed);
+
+        FORMATETC fmt{ CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+        STGMEDIUM medium{};
+        if (data && SUCCEEDED(data->GetData(&fmt, &medium))) {
+            // HDROP is the HGLOBAL itself; DragQueryFile does not want a lock pointer.
+            HDROP drop = static_cast<HDROP>(medium.hGlobal);
+            UINT count = DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0);
+            for (UINT i = 0; i < count; ++i) {
+                UINT chars = DragQueryFileW(drop, i, nullptr, 0);
+                if (chars == 0)
+                    continue;
+                std::wstring wide(chars + 1, L'\0');
+                DragQueryFileW(drop, i, wide.data(), chars + 1);
+                wide.resize(chars);
+                std::string utf8 = WideToUtf8(wide.c_str(), static_cast<int>(wide.size()));
+                if (app_ && !utf8.empty())
+                    app_->OnFileDropped(utf8);
+            }
+            ReleaseStgMedium(&medium);
+        }
+
+        if (app_)
+            app_->OnFileDragHover(false);
+        return S_OK;
+    }
+
+    App* app_ = nullptr;
+    LONG refs_ = 1;
+};
+
+static HWND WindowHwnd(SDL_Window* window)
+{
+    if (!window)
+        return nullptr;
+    return static_cast<HWND>(SDL_GetPointerProperty(
+        SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+}
+
+#endif // _WIN32
+
+void App::InstallFileDrop()
+{
+#ifdef _WIN32
+    // SDL's own drop target fights a borderless hit-tested window. Take the
+    // HWND ourselves so Explorer drops arrive as UTF-8 paths.
+    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, false);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, false);
+
+    HWND hwnd = WindowHwnd(window_);
+    if (!hwnd)
+        return;
+
+    ChangeWindowMessageFilterEx(hwnd, WM_DROPFILES, MSGFLT_ALLOW, nullptr);
+    ChangeWindowMessageFilterEx(hwnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+    ChangeWindowMessageFilterEx(hwnd, 0x0049 /* WM_COPYGLOBALDATA */, MSGFLT_ALLOW, nullptr);
+
+    HRESULT ole = OleInitialize(nullptr);
+    ole_inited_by_us_ = (ole == S_OK);
+    if (FAILED(ole) && ole != RPC_E_CHANGED_MODE) {
+        DragAcceptFiles(hwnd, TRUE);
+        SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
+        log_info("App::InstallFileDrop: OLE unavailable, WM_DROPFILES fallback");
+        return;
+    }
+
+    // Drop any target SDL registered at window creation, then take the HWND.
+    RevokeDragDrop(hwnd);
+    auto* target = new WinFileDropTarget(this);
+    HRESULT hr = RegisterDragDrop(hwnd, target);
+    if (SUCCEEDED(hr)) {
+        drop_target_ = target;
+        log_info("App::InstallFileDrop: IDropTarget registered");
+        return;
+    }
+    target->Release();
+    DragAcceptFiles(hwnd, TRUE);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
+    log_info("App::InstallFileDrop: RegisterDragDrop failed %08lx, SDL fallback",
+             static_cast<unsigned long>(hr));
+#else
+    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, true);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, true);
+#endif
+}
+
+void App::RemoveFileDrop()
+{
+#ifdef _WIN32
+    HWND hwnd = WindowHwnd(window_);
+    if (hwnd && drop_target_) {
+        auto* target = static_cast<WinFileDropTarget*>(drop_target_);
+        target->Detach();
+        RevokeDragDrop(hwnd);
+        target->Release();
+        drop_target_ = nullptr;
+    }
+    if (ole_inited_by_us_) {
+        OleUninitialize();
+        ole_inited_by_us_ = false;
+    }
+#endif
+    external_file_drag_.store(false, std::memory_order_relaxed);
+}
+
 SDL_HitTestResult App::HitTestCallback(SDL_Window* win, const SDL_Point* area, void* data) {
     auto* app = static_cast<App*>(data);
+    // A file drag must hit the client area; caption hit-testing swallows the drop.
+    if (app->external_file_drag_.load(std::memory_order_relaxed))
+        return SDL_HITTEST_NORMAL;
+
     int width, height;
     SDL_GetWindowSize(win, &width, &height);
 
@@ -257,11 +468,11 @@ SDL_HitTestResult App::HitTestCallback(SDL_Window* win, const SDL_Point* area, v
 }
 
 void App::DrawTopbar() {
-    ImVec2 display = ImGui::GetIO().DisplaySize;
-    float w = display.x;
+    auto* vp = ImGui::GetMainViewport();
+    float w = vp->Size.x;
     float h = config_.topbar_height;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowPos(ImVec2(vp->Pos.x, vp->Pos.y));
     ImGui::SetNextWindowSize(ImVec2(w, h));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);

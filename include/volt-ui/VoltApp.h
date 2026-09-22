@@ -1,12 +1,17 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include <atomic>
 #include <string>
 
 #include "volt-ui/Types.h"
 #include "log.h"
 
 struct ImGuiContext;
+
+namespace volt {
+struct WinFileDropTarget;
+}
 
 namespace volt {
 
@@ -24,6 +29,7 @@ struct AppConfig {
 };
 
 class App {
+    friend struct WinFileDropTarget;
 public:
     explicit App(const AppConfig& config = {});
     virtual ~App();
@@ -43,7 +49,7 @@ public:
 
     void ToggleMaximize();
     bool IsMaximized() const { return is_maximized_; }
-    float GetTopbarHeight() const { return config_.topbar_height; }
+    float GetTopbarHeight() const { return config_.use_topbar ? config_.topbar_height : 0.0f; }
 
 protected:
     virtual void OnCreate() {}
@@ -51,6 +57,12 @@ protected:
     virtual void OnRender() {}
     virtual void OnEvent(const SDL_Event& event) { (void)event; }
     virtual void OnDestroy() {}
+
+    // OS file drag onto the window. Paths are UTF-8.
+    virtual void OnFileDropped(const std::string& utf8Path) { (void)utf8Path; }
+    virtual void OnFileDragHover(bool active) { (void)active; }
+    bool IsExternalFileDrag() const { return external_file_drag_.load(std::memory_order_relaxed); }
+    void SetExternalFileDrag(bool active) { external_file_drag_.store(active, std::memory_order_relaxed); }
 
     virtual void DrawTopbar();
 
@@ -62,6 +74,8 @@ private:
     void BeginFrame();
     void EndFrame();
     void ProcessEvents();
+    void InstallFileDrop();
+    void RemoveFileDrop();
 
     static SDL_HitTestResult HitTestCallback(SDL_Window* win,
                                              const SDL_Point* area,
@@ -77,6 +91,9 @@ private:
     uint64_t last_ticks_ = 0;
     Color clear_color_{0.1f, 0.1f, 0.12f, 1.0f};
     bool is_maximized_ = false;
+    void* drop_target_ = nullptr;
+    bool ole_inited_by_us_ = false;
+    std::atomic<bool> external_file_drag_{false};
 };
 
 } // namespace volt

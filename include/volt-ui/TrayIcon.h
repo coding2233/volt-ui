@@ -7,8 +7,11 @@
 #include <thread>
 #include <mutex>
 #include <deque>
+#include <cstdint>
 
 namespace volt {
+
+namespace dbus_mini { struct ParsedMessage; }
 
 struct TrayMenuItem {
     std::string id;
@@ -75,6 +78,11 @@ private:
     std::unique_ptr<PlatformData> m_data;
 
     bool PopEvent(TrayEvent& ev);
+
+    // Linux/SNI: answer a D-Bus method call (StatusNotifierItem properties or
+    // com.canonical.dbusmenu). Returns true when `out`/`sig` hold the reply.
+    bool HandleDBusCall(const dbus_mini::ParsedMessage& pm,
+                        std::vector<uint8_t>& out, std::string& sig);
 
     bool PlatformInit(const std::string& iconPath, const std::string& tooltip);
     bool PlatformInitFromData(const uint8_t* rgba, int w, int h, const std::string& tooltip);
